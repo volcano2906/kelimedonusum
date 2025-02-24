@@ -10,6 +10,9 @@ st.title("Uygulama ID'lerine Göre Rank Edilmiş Anahtar Kelimeler ve Puanlama")
 # CSV dosyasını yükleme
 uploaded_file = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"])
 
+# Anahtar kelime hacmi 5 olanları filtreleme seçeneği
+drop_low_volume = st.checkbox("Exclude Keywords with Volume 5")
+
 def update_rank(rank):
     try:
         rank = float(rank)
@@ -30,6 +33,10 @@ if uploaded_file is not None:
     # Dosyayı oku
     df = pd.read_csv(uploaded_file)
     
+    # Anahtar kelime hacmi 5 olanları filtrele
+    if drop_low_volume:
+        df = df[df["Volume"] != 5]
+    
     # Rank değerlerini sayıya çevir ve puan hesapla
     df["Rank"] = df["Rank"].astype(str)  # Rank sütunu string olmalı
     df["Score"] = df["Rank"].apply(update_rank)
@@ -48,8 +55,8 @@ if uploaded_file is not None:
     pivot_df = pivot_df.merge(score_pivot, on="Keyword", how="left")
     pivot_df = pivot_df.merge(rank_count, on="Keyword", how="left")
     
-    # Sütun adlarını güncelle
-    pivot_df.columns = ["Keyword", "Volume"] + [f"app{i+1}" for i in range(len(pivot_df.columns) - 4)] + ["Total Score", "Rank Count"]
+    # Sütun adlarını güncelle (Application Id'leri doğrudan koru)
+    pivot_df.columns = ["Keyword", "Volume"] + list(pivot_df.columns[2:-2]) + ["Total Score", "Rank Count"]
     
     # Boş değerleri null olarak değiştir
     pivot_df = pivot_df.fillna("null")
