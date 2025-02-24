@@ -31,20 +31,22 @@ if uploaded_file is not None:
     df["Rank"] = df["Rank"].astype(str)  # Rank sütunu string olmalı
     df["Score"] = df["Rank"].apply(update_rank)
     
-    # Rank değeri null olmayanları birleştirerek sakla
-    df["NonNull Rank"] = df["Rank"].apply(lambda x: x if x != "null" else None)
-    
     # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank değerleri hücrede)
     pivot_df = df.pivot_table(index=["Keyword", "Volume"], columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(map(str, x))).reset_index()
     
     # Puanları toplama
     score_pivot = df.groupby("Keyword")["Score"].sum().reset_index()
-    non_null_pivot = df.groupby("Keyword")["NonNull Rank"].apply(lambda x: ', '.join(filter(None, x))).reset_index()
+    
+    # Null olmayan Rank değerlerini sayma
+    rank_count = df.groupby("Keyword")["Rank"].count().reset_index()
+    rank_count.rename(columns={"Rank": "Rank Count"}, inplace=True)
+    
+    # Puanları ve Rank sayısını tabloya ekleme
     pivot_df = pivot_df.merge(score_pivot, on="Keyword", how="left")
-    pivot_df = pivot_df.merge(non_null_pivot, on="Keyword", how="left")
+    pivot_df = pivot_df.merge(rank_count, on="Keyword", how="left")
     
     # Sütun adlarını güncelle
-    pivot_df.columns = ["Keyword", "Volume"] + [f"app{i+1}" for i in range(len(pivot_df.columns) - 4)] + ["Total Score", "NonNull Rank"]
+    pivot_df.columns = ["Keyword", "Volume"] + [f"app{i+1}" for i in range(len(pivot_df.columns) - 4)] + ["Total Score", "Rank Count"]
     
     # Boş değerleri null olarak değiştir
     pivot_df = pivot_df.fillna("null")
