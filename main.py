@@ -11,9 +11,15 @@ if uploaded_file is not None:
     # Dosyayı oku
     df = pd.read_csv(uploaded_file)
     
-    # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank değerleri hücrede)
-    df["Rank"] = df["Rank"].astype(str)  # Rank değerlerini string yaparak birleştirmeye uygun hale getirme
-    pivot_df = df.pivot_table(index="Keyword", columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(x))
+    # Rank ve Volume değerlerini string yaparak birleştirmeye uygun hale getirme
+    df["Rank"] = df["Rank"].astype(str)
+    df["Volume"] = df["Volume"].astype(str)
+    
+    # Rank ve Volume'ü birleştirme
+    df["Rank_Volume"] = df["Rank"] + " (" + df["Volume"] + ")"
+    
+    # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank_Volume değerleri hücrede)
+    pivot_df = df.pivot_table(index="Keyword", columns="Application Id", values="Rank_Volume", aggfunc=lambda x: ', '.join(x))
     
     # Sonuçları gösterme
     st.write("### Dönüştürülmüş Veri Tablosu")
