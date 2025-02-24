@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 
+# Sayfa ayarlarını tam ekran yap
+st.set_page_config(layout="wide")
+
 # Başlık
 st.title("Uygulama ID'lerine Göre Rank Edilmiş Anahtar Kelimeler ve Puanlama")
 
@@ -53,7 +56,7 @@ if uploaded_file is not None:
     
     # Sonuçları gösterme
     st.write("### Dönüştürülmüş Veri Tablosu ve Puanlar")
-    st.dataframe(pivot_df)
+    st.dataframe(pivot_df, use_container_width=True)
     
     # CSV olarak indirme butonu
     csv = pivot_df.to_csv(index=False).encode('utf-8')
