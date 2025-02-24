@@ -11,22 +11,22 @@ if uploaded_file is not None:
     # Dosyayı oku
     df = pd.read_csv(uploaded_file)
     
-    # Rank ve Volume değerlerini string yaparak birleştirmeye uygun hale getirme
-    df["Rank"] = df["Rank"].astype(str)
-    df["Volume"] = df["Volume"].astype(str)
+    # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank değerleri hücrede)
+    df["Rank"] = df["Rank"].astype(str)  # Rank değerlerini string yaparak birleştirmeye uygun hale getirme
+    pivot_df = df.pivot_table(index=["Keyword", "Volume"], columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(x)).reset_index()
     
-    # Rank ve Volume'ü birleştirme
-    df["Rank_Volume"] = df["Rank"] + " (" + df["Volume"] + ")"
+    # Sütun adlarını güncelle
+    pivot_df.columns = ["Keyword", "Volume"] + [f"app{i+1}" for i in range(len(pivot_df.columns) - 2)]
     
-    # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank_Volume değerleri hücrede)
-    pivot_df = df.pivot_table(index="Keyword", columns="Application Id", values="Rank_Volume", aggfunc=lambda x: ', '.join(x))
+    # Boş değerleri null olarak değiştir
+    pivot_df = pivot_df.fillna("null")
     
     # Sonuçları gösterme
     st.write("### Dönüştürülmüş Veri Tablosu")
     st.dataframe(pivot_df)
     
     # CSV olarak indirme butonu
-    csv = pivot_df.to_csv().encode('utf-8')
+    csv = pivot_df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="Dönüştürülmüş CSV'yi İndir",
         data=csv,
