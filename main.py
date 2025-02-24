@@ -28,10 +28,11 @@ if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
     
     # Rank değerlerini sayıya çevir ve puan hesapla
+    df["Rank"] = df["Rank"].astype(str)  # Rank sütunu string olmalı
     df["Score"] = df["Rank"].apply(update_rank)
     
     # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank değerleri hücrede)
-    pivot_df = df.pivot_table(index=["Keyword", "Volume"], columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(x)).reset_index()
+    pivot_df = df.pivot_table(index=["Keyword", "Volume"], columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(map(str, x))).reset_index()
     
     # Puanları toplama
     score_pivot = df.groupby("Keyword")["Score"].sum().reset_index()
