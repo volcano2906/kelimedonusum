@@ -1,6 +1,12 @@
 import streamlit as st
 import pandas as pd
 import re
+from nltk.corpus import stopwords
+import nltk
+
+# Stopwords'leri yükle
+nltk.download('stopwords')
+stop_words = set(stopwords.words('english'))
 
 # Sayfa ayarlarını tam ekran yap
 st.set_page_config(layout="wide")
@@ -16,7 +22,7 @@ kw_input = st.text_input("Keyword Alanı (Maksimum 100 karakter, space veya comm
 
 # Girilen alanları birleştir ve temizle
 all_keywords = set(re.split(r'[ ,]+', title + ' ' + subtitle + ' ' + kw_input))
-all_keywords = {word.lower().strip() for word in all_keywords if word}
+all_keywords = {word.lower().strip() for word in all_keywords if word and word.lower() not in stop_words}
 
 # CSV dosyasını yükleme
 uploaded_file = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"])
@@ -55,7 +61,7 @@ if uploaded_file is not None:
     # Eksik kelimeleri bul
     def find_missing_keywords(keyword):
         words = set(re.split(r'[ ,]+', keyword.lower()))
-        missing_words = words - all_keywords
+        missing_words = words - all_keywords - stop_words
         return ', '.join(missing_words) if missing_words else "None"
     
     df["Missing Keywords"] = df["Keyword"].apply(find_missing_keywords)
