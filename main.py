@@ -1,11 +1,22 @@
 import streamlit as st
 import pandas as pd
+import re
 
 # Sayfa ayarlarını tam ekran yap
 st.set_page_config(layout="wide")
 
 # Başlık
 st.title("Uygulama ID'lerine Göre Rank Edilmiş Anahtar Kelimeler ve Puanlama")
+
+# Kullanıcıdan Title, Subtitle ve KW girişi
+st.subheader("Anahtar Kelime Karşılaştırma")
+title = st.text_input("Title (Maksimum 30 karakter)", max_chars=30)
+subtitle = st.text_input("Subtitle (Maksimum 30 karakter)", max_chars=30)
+kw_input = st.text_input("Keyword Alanı (Maksimum 100 karakter, space veya comma ile ayırın)", max_chars=100)
+
+# Girilen alanları birleştir ve temizle
+all_keywords = set(re.split(r'[ ,]+', title + ' ' + subtitle + ' ' + kw_input))
+all_keywords = {word.lower().strip() for word in all_keywords if word}
 
 # CSV dosyasını yükleme
 uploaded_file = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"])
@@ -41,6 +52,14 @@ if uploaded_file is not None:
     df["Rank"] = df["Rank"].astype(str)  # Rank sütunu string olmalı
     df["Score"] = df["Rank"].apply(update_rank)
     
+    # Eksik kelimeleri bul
+    def find_missing_keywords(keyword):
+        words = set(re.split(r'[ ,]+', keyword.lower()))
+        missing_words = words - all_keywords
+        return ', '.join(missing_words) if missing_words else "None"
+    
+    df["Missing Keywords"] = df["Keyword"].apply(find_missing_keywords)
+    
     # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank değerleri hücrede)
     pivot_df = df.pivot_table(index=["Keyword", "Volume"], columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(map(str, x))).reset_index()
     
@@ -54,9 +73,10 @@ if uploaded_file is not None:
     # Puanları ve Rank sayısını tabloya ekleme
     pivot_df = pivot_df.merge(score_pivot, on="Keyword", how="left")
     pivot_df = pivot_df.merge(rank_count, on="Keyword", how="left")
+    pivot_df = pivot_df.merge(df[["Keyword", "Missing Keywords"]], on="Keyword", how="left")
     
     # Sütun adlarını güncelle (Application Id'leri doğrudan koru)
-    pivot_df.columns = ["Keyword", "Volume"] + list(pivot_df.columns[2:-2]) + ["Total Score", "Rank Count"]
+    pivot_df.columns = ["Keyword", "Volume"] + list(pivot_df.columns[2:-3]) + ["Total Score", "Rank Count", "Missing Keywords"]
     
     # Boş değerleri null olarak değiştir
     pivot_df = pivot_df.fillna("null")
