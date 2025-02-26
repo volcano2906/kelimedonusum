@@ -24,8 +24,8 @@ kw_input = st.text_input("Keyword Alanı (Maksimum 100 karakter, space veya comm
 all_keywords = set(re.split(r'[ ,]+', title + ' ' + subtitle + ' ' + kw_input))
 all_keywords = {word.lower().strip() for word in all_keywords if word and word.lower() not in stop_words}
 
-# CSV dosyasını yükleme
-uploaded_file = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"], accept_multiple_files=True)
+# CSV dosyalarını yükleme
+uploaded_files = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"], accept_multiple_files=True)
 
 # Anahtar kelime hacmi 5 olanları filtreleme seçeneği
 drop_low_volume = st.checkbox("Exclude Keywords with Volume 5")
@@ -46,9 +46,10 @@ def update_rank(rank):
     else:
         return 1
 
-if uploaded_file is not None:
-    # Dosyayı oku
-    df = pd.read_csv(uploaded_file)
+if uploaded_files:
+    # Dosyaları oku ve birleştir
+    df_list = [pd.read_csv(file) for file in uploaded_files]
+    df = pd.concat(df_list, ignore_index=True).drop_duplicates()
     
     # Anahtar kelime hacmi 5 olanları filtrele
     if drop_low_volume:
@@ -67,7 +68,7 @@ if uploaded_file is not None:
     df["Missing Keywords"] = df["Keyword"].apply(find_missing_keywords)
     
     # Veriyi uygun formata dönüştürme (Keyword'ler satır, Application Id'ler sütun, Rank değerleri hücrede)
-    pivot_df = df.pivot_table(index=["Keyword", "Volume"], columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(map(str, x))).reset_index()
+    pivot_df = df.pivot_table(index=["Keyword", "Volume"], columns="Application Id", values="Rank", aggfunc=lambda x: ', '.join(map(str, set(x)))).reset_index()
     
     # Puanları toplama
     score_pivot = df.groupby("Keyword")["Score"].sum().reset_index()
@@ -79,16 +80,13 @@ if uploaded_file is not None:
     # Puanları ve Rank sayısını tabloya ekleme
     pivot_df = pivot_df.merge(score_pivot, on="Keyword", how="left")
     pivot_df = pivot_df.merge(rank_count, on="Keyword", how="left")
-    pivot_df = pivot_df.merge(df[["Keyword", "Missing Keywords"]], on="Keyword", how="left")
+    pivot_df = pivot_df.merge(df[["Keyword", "Missing Keywords"]].drop_duplicates(), on="Keyword", how="left")
     
     # Sütun adlarını güncelle (Application Id'leri doğrudan koru)
     pivot_df.columns = ["Keyword", "Volume"] + list(pivot_df.columns[2:-3]) + ["Total Score", "Rank Count", "Missing Keywords"]
     
     # Boş değerleri null olarak değiştir
     pivot_df = pivot_df.fillna("null")
-    
-    # Tüm sütunlarda aynı değerlere sahip olan satırları kaldır
-    pivot_df = pivot_df.drop_duplicates()
     
     # Sonuçları gösterme
     st.write("### Dönüştürülmüş Veri Tablosu ve Puanlar")
