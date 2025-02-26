@@ -25,7 +25,7 @@ all_keywords = set(re.split(r'[ ,]+', title + ' ' + subtitle + ' ' + kw_input))
 all_keywords = {word.lower().strip() for word in all_keywords if word and word.lower() not in stop_words}
 
 # CSV dosyasını yükleme
-uploaded_file = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"])
+uploaded_file = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"], accept_multiple_files=True)
 
 # Anahtar kelime hacmi 5 olanları filtreleme seçeneği
 drop_low_volume = st.checkbox("Exclude Keywords with Volume 5")
