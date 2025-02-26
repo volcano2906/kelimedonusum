@@ -24,8 +24,8 @@ kw_input = st.text_input("Keyword Alanı (Maksimum 100 karakter, space veya comm
 all_keywords = set(re.split(r'[ ,]+', title + ' ' + subtitle + ' ' + kw_input))
 all_keywords = {word.lower().strip() for word in all_keywords if word and word.lower() not in stop_words}
 
-# CSV dosyasını yükleme
-uploaded_file = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"])
+# CSV dosyalarını yükleme
+uploaded_files = st.file_uploader("CSV dosyanızı yükleyin", type=["csv"], accept_multiple_files=True)
 
 # Anahtar kelime hacmi 5 olanları filtreleme seçeneği
 drop_low_volume = st.checkbox("Exclude Keywords with Volume 5")
@@ -46,9 +46,10 @@ def update_rank(rank):
     else:
         return 1
 
-if uploaded_file is not None:
-    # Dosyayı oku
-    df = pd.read_csv(uploaded_file)
+if uploaded_files:
+    # Dosyaları oku ve birleştir
+    df_list = [pd.read_csv(file) for file in uploaded_files]
+    df = pd.concat(df_list, ignore_index=True).drop_duplicates()
     
     # Anahtar kelime hacmi 5 olanları filtrele
     if drop_low_volume:
@@ -62,7 +63,7 @@ if uploaded_file is not None:
     def find_missing_keywords(keyword):
         words = set(re.split(r'[ ,]+', keyword.lower()))
         missing_words = words - all_keywords - stop_words
-        return ','.join(missing_words) if missing_words else "-"
+        return ', '.join(missing_words) if missing_words else "None"
     
     df["Missing Keywords"] = df["Keyword"].apply(find_missing_keywords)
     
