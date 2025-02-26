@@ -48,7 +48,8 @@ def update_rank(rank):
 
 if uploaded_files:
     # Dosyaları oku ve birleştir
-    df = [pd.read_csv(file) for file in uploaded_files]
+    df_list = [pd.read_csv(file) for file in uploaded_files]
+    df = pd.concat(df_list, ignore_index=True).drop_duplicates()
     
     # Anahtar kelime hacmi 5 olanları filtrele
     if drop_low_volume:
